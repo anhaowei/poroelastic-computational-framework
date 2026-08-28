@@ -107,13 +107,11 @@ Circparam = {
     "V_sin0": 190,
     "R_sin": 100,
     "C_sin": 0.05,#0.18,
-    # Code cycles are zero based: stop_iter=9 writes ten complete cycles 0--9.
+   
     "stop_iter": 9,
 }
 
-# Hemodynamically equilibrated state used by the paper production runs.  It is
-# embedded here so the public reproduction does not depend on a private output
-# directory or a separate warm-start wrapper.
+
 HEMODYNAMIC_WARM_START = {
     "V_sa": 439.0024763384681,
     "V_ad": 136.72263870280628,
@@ -153,7 +151,7 @@ SimDetails = {
     "closedloopparam": Circparam,
     "Ischemia": False,
     "springbc": 0,
-    # Berger-type three-field element: CG1(u)-CG1(W)-DG0(p).
+    #  three-field element: CG1(u)-CG1(W)-DG0(p).
     "Mechanics Discretization": "P1P1P0_Berger",
     "topid": 4,
     "LVendoid": 2,
@@ -165,9 +163,7 @@ SimDetails = {
     "isunloadingonly": False,
     "epiid_Kadj_coeff": [50, 10],
     "permeability": 7.0e-5,  # reference permeability k0
-    # Berger local pressure-jump stabilization. gamma = gamma0 / pressure_ref.
-    # Treat gamma0 below as an INITIAL value; sweep 1e0...1e-5 and select the
-    # smallest value that removes checkerboarding without altering mean pressure/flow.
+   
     "pressure_jump_gamma0": 1.0e-3,
     "pressure_ref": 100.0 / 0.0075,  # 100 mmHg in the code pressure unit (Pa)
     # Normal-only impermeability penalty for the CG1 nominal flux on myocardial
@@ -185,13 +181,11 @@ SimDetails = {
     "coronary_g_min": 0.42,
     "coronary_P50_mmHg": 35.0,
     "coronary_kP_mmHg": 5.0,
-    # Write compact reviewer-facing diagnostics and skip expensive field
-    # projections when PORO_FAST_DIAGNOSTICS=1.
+    
     "fast_diagnostics": True,
-    # Write the reviewer-requested primary three-field solution as PVD series.
+    
     "production_field_output": True,
-    # Write the time-independent harmonic transmural coordinate and normal.
-    # These fields are diagnostics only and do not enter the nonlinear problem.
+    
     "write_transmural_fields": True,
     # Optional read-only regional mass/source/sink diagnostics for the
     # subendocardial, mid-wall, and subepicardial reference thirds.
