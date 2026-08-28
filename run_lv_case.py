@@ -21,19 +21,15 @@ from lvporo_min.closedloop.run_BiV_ClosedLoop_pctrl_lvporo import run_BiV_Closed
 # -----------------------------------------------------------------------------
 # I/O settings
 # -----------------------------------------------------------------------------
-# IMPORTANT:
-# Run this script from the repo root. With the paths below, the mesh files should
-# be located at:
-#     ../LVMesh/vh/ellipsoidal_baselinegeo.hdf5
-#     ../LVMesh/vh/ellipsoidal_baselinegeo_refine.hdf5
-# Change directory_me/directory_ep if your mesh folder is elsewhere.
+# Run from lv_poro_min_repo.  The two public mesh files are expected in the
+# sibling ../LVMesh directory.
 IODetails = {
     "casename": "ellipsoidal_baselinegeo",
-    "directory_me": "../LVMesh/vh/",
-    "directory_ep": "../LVMesh/vh/",
+    "directory_me": "../LVMesh/",
+    "directory_ep": "../LVMesh/",
     "outputfolder": "./outputs/",
     "folderName": "",
-    "caseID": "LVelectromechanics_pctrl",
+    "caseID": "baseline_Rsin100_10cycles",
     "isLV": True,
 }
 
@@ -109,10 +105,24 @@ Circparam = {
     # coronary sinus
     "V_sin": 250,
     "V_sin0": 190,
-    "R_sin": 1000,
+    "R_sin": 100,
     "C_sin": 0.05,#0.18,
-    "stop_iter": 5,
+    # Code cycles are zero based: stop_iter=9 writes ten complete cycles 0--9.
+    "stop_iter": 9,
 }
+
+# Hemodynamically equilibrated state used by the paper production runs.  It is
+# embedded here so the public reproduction does not depend on a private output
+# directory or a separate warm-start wrapper.
+HEMODYNAMIC_WARM_START = {
+    "V_sa": 439.0024763384681,
+    "V_ad": 136.72263870280628,
+    "V_sv": 3552.4659037913802,
+    "V_LA": 193.71849282039437,
+    "V_per": 71.12117942175881,
+    "V_sin": 267.58267467890107,
+}
+Circparam.update(HEMODYNAMIC_WARM_START)
 
 
 # -----------------------------------------------------------------------------
@@ -171,21 +181,21 @@ SimDetails = {
     # Smooth LV-pressure-dependent reduction of arterial tissue conductance.
     # Keep the legacy equations as the default; enable explicitly with
     # PORO_CORONARY_COMPRESSION_MODEL=plv_sigmoid.
-    "coronary_compression_model": "none",
+    "coronary_compression_model": "plv_sigmoid",
     "coronary_g_min": 0.42,
     "coronary_P50_mmHg": 35.0,
     "coronary_kP_mmHg": 5.0,
     # Write compact reviewer-facing diagnostics and skip expensive field
     # projections when PORO_FAST_DIAGNOSTICS=1.
-    "fast_diagnostics": False,
+    "fast_diagnostics": True,
     # Write the reviewer-requested primary three-field solution as PVD series.
-    "production_field_output": False,
+    "production_field_output": True,
     # Write the time-independent harmonic transmural coordinate and normal.
     # These fields are diagnostics only and do not enter the nonlinear problem.
-    "write_transmural_fields": False,
+    "write_transmural_fields": True,
     # Optional read-only regional mass/source/sink diagnostics for the
     # subendocardial, mid-wall, and subepicardial reference thirds.
-    "write_regional_transmural_diagnostics": False,
+    "write_regional_transmural_diagnostics": True,
     "regional_diagnostics_write_step": 1,
     # ischemia / regional contractility hooks retained for compatibility
     "Tmax_endo": Constant(endo_contRactility),
@@ -238,6 +248,19 @@ def _apply_environment_overrides():
             os.environ["PORO_WRITE_REGIONAL_TRANSMURAL_DIAGNOSTICS"].lower() \
             not in ("0", "false", "no")
 
+    case_type = os.environ.get("PORO_CASE_TYPE", "baseline").strip().lower()
+    if case_type not in ("baseline", "cso"):
+        raise ValueError("PORO_CASE_TYPE must be 'baseline' or 'cso'")
+    if "PORO_CASE_ID" not in os.environ:
+        resistance = Circparam["R_sin"]
+        resistance_tag = "{:g}".format(resistance).replace("+", "")
+        IODetails["caseID"] = "{}_Rsin{}_10cycles".format(
+            case_type, resistance_tag)
+
+    SimDetails["hemodynamic_warm_start_source"] = "embedded_public_warm_start"
+    SimDetails["hemodynamic_warm_start_time_ms"] = 0.0
+    SimDetails["hemodynamic_warm_start_state"] = dict(HEMODYNAMIC_WARM_START)
+
 
 def _prepare_output_dir():
     """Create the output directory expected by exportfiles before the solver opens files."""
@@ -267,6 +290,13 @@ def main():
     _apply_environment_overrides()
     _prepare_output_dir()
     _print_mesh_reminder()
+    if MPI.rank(MPI.comm_world) == 0:
+        print("Case type            : {}".format(
+            os.environ.get("PORO_CASE_TYPE", "baseline")), flush=True)
+        print("R_sin                : {}".format(Circparam["R_sin"]), flush=True)
+        print("Completed cycles     : 10 (code cycles 0--9)", flush=True)
+        print("Embedded warm start  : {}".format(
+            HEMODYNAMIC_WARM_START), flush=True)
     run_BiV_ClosedLoop(IODet=IODetails, SimDet=SimDetails)
 
 
