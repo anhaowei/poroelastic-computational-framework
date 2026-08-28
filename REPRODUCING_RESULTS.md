@@ -86,7 +86,7 @@ pvpython postprocess.py \
   --cycle 10
 ```
 
-The cycle argument is human-readable. `--cycle 10` selects zero-based solver
+The cycle argument is readable. `--cycle 10` selects zero-based solver
 cycle 9, corresponding to global simulation time 5940–6600 ms.
 
 Generated products are written to:
