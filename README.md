@@ -3,7 +3,7 @@
 # Reproducing the LV poroelastic simulations
 
 ## Repository layout
-Please find the singularity_fenics2019.img in git release
+Please find the singularity_fenics2019.img in git release.
 Place the files in the following structure:
 
 ```text
